@@ -1,0 +1,8 @@
+{
+  "name": "socket game",
+  "description": "game built using socket.io and paper.js",
+  "author": "zuber javed",
+  "dependencies": {
+  },
+  "engine": "node >= 0.4.1"
+}
