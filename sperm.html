@@ -21,17 +21,35 @@ var opready = false;
 var spermop;
 var ranpos;
 var group = new Group();
-var text = new PointText(new Point(200, 50));
+var text = new PointText(new Point(sessionStorage.width/2,sessionStorage.height-100));
 text.justification = 'center';
 text.fillColor = 'white';
 var ssentence = "";
+var ophealth = 100;
+var opreducedhealth = 100;
+
+var displayScore = new PointText(new Point(sessionStorage.width/2,50));
+displayScore.justification = 'center';
+displayScore.fillColor = 'white';
+displayScore.strokeWidth = 1;
+displayScore.strokeColor = 'white';
+displayScore.fontSize = 15;
+displayScore.opacity = 0.6;
+
+if(!sessionStorage.score){
+    sessionStorage.score = 0;
+}
 
 function opsp(){
+
     socket = io.connect();
     //console.log('inside self function');
     if(!sessionStorage.sizeSent)
     socket.emit('size',{width:window.innerWidth,height:window.innerHeight});
     sessionStorage.sizeSent = true;
+
+    if(sessionStorage.score)
+        socket.emit('score',sessionStorage.score);
 
     socket.on('size',function(data){
             //console.log('inside size');
@@ -60,6 +78,11 @@ function opsp(){
        
     });
 
+    socket.on('score',function(data){
+        displayScore.content = sessionStorage.score+"/"+data;
+        socket.emit('score',sessionStorage.score);
+    });
+
     socket.on('ready',function(){
         //console.log('ready');
         socket.emit('pos',ranpos);
@@ -83,6 +106,15 @@ function opsp(){
     }
     group.addChild(path);
     path.strokeColor = 'white';
+
+    var opHealth = new PointText(new Point(sessionStorage.width-100, 50));
+    opHealth.justification = 'center';
+    opHealth.fillColor = 'white';
+    opHealth.strokeWidth = 1;
+    opHealth.strokeColor = 'white';
+    opHealth.fontSize = 15;
+    opHealth.opacity = 0.6;
+    opHealth.content = 'Peer : '+ophealth + '%';
 
     var headPath = new Path.Oval({
         from: [0, 0],
@@ -117,6 +149,8 @@ function opsp(){
         position.x = data.pos.x;
         position.y = data.pos.y;
     });
+
+    
     var tochan = "";
     display = false;
     remove = false;
@@ -185,6 +219,12 @@ var sgroup = new Group([scircle1,scircle2,scircle3]);
             thoughtCloud.position = sgroup.position - new Point(0,25);  
             stext.position = thoughtCloud.position;
 
+            if(opreducedhealth<ophealth){
+                ophealth -=1;
+                if(ophealth<=0)
+                    ophealth = 0;
+                opHealth.content = 'Peer : '+ophealth+'%';
+            }
 
             if(tochan.length>0&&display){
                 if(thoughtCloud.opacity<=0.6){
@@ -399,6 +439,16 @@ var sperm = new function() {
     }
     path.strokeColor = 'white';
 
+    var health=100;
+    var reducedhealth = 100;
+
+    socket.on('reducedHealth',function(data){
+        console.log('inside reducedHealth');
+        reducedhealth = data;
+    });
+
+    
+
     var headPath = new Path.Oval({
         from: [0, 0],
         to: [13, 8],
@@ -448,6 +498,18 @@ var sperm = new function() {
     sujit = path;
     anit = vector;
     amit = view;
+    var Health = new PointText(new Point(100,50));
+    Health.justification = 'center';
+    Health.fillColor = 'white';
+    Health.strokeWidth = 1;
+    Health.strokeColor = 'white';
+    Health.fontSize = 15;
+    Health.opacity = 0.6;
+    Health.content ='You : '+health + '%';
+
+    console.log('inside sperm');
+    console.log(Health);
+
     return {
         left: function() {
             if (speed >= 0.01) {
@@ -492,9 +554,17 @@ var sperm = new function() {
             sgroup.position = position - new Point(5,15);
             thoughtCloud.position = sgroup.position - new Point(0,25);  
             stext.position = thoughtCloud.position;
+
+            if(reducedhealth<health){
+                health -=1;
+                if(health<=0)
+                    health = 0;
+                Health.content ='You : '+health + '%';
+            }
+
             if(ssentence.length>0){
                 var length = ssentence.length;
-            thoughtCloud.bounds.width = 30+(length*10);
+                thoughtCloud.bounds.width = 30+(length*10);
                 stext.content = ssentence;
                 if(thoughtCloud.opacity<=0.6){
                     thoughtCloud.opacity += 0.03;
@@ -624,11 +694,26 @@ var sperm = new function() {
         },
         hitCheck : function(){
             var hitresult;
+            var deepestcut;
+            var hit = false;
             for(var i =0;i<path.segments.length-1;i++){
                 hitresult = group.hitTest(path.segments[path.segments.length-i-1].point,{handles:true,fill:true,stroke:true});
 
                 if(hitresult){
-                    // console.log(hitresult);
+                    hit = true;
+                    console.log(hitresult);
+                    console.log(i);
+                    deepestcut = i;
+                }
+            }
+            if(hit){
+                console.log('inside if');
+                opreducedhealth = opreducedhealth-(deepestcut);
+                console.log(opreducedhealth);
+                socket.emit('reducedHealth',opreducedhealth);
+                if(opreducedhealth<=0){
+                    console.log('inside if if');
+                    sessionStorage.score = sessionStorage.score*1 + 1;
                     socket.emit('hit');
                     group.remove();
                     group = new Group();

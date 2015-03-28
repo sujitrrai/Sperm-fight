@@ -46,6 +46,14 @@ io.on('connection',function(socket){
 		socket.broadcast.emit('opdata',data);
 	});
 
+	socket.on('reducedHealth',function(data){
+		socket.broadcast.emit('reducedHealth',data);
+	});
+
+	socket.on('score',function(data){
+		socket.broadcast.emit('score',data);
+	});
+
 	socket.on('hit',function(){
 		socket.broadcast.emit('hit',"LOST");
 		socket.emit('hit',"WON");
