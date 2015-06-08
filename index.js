@@ -91,7 +91,7 @@ io.on('connection',function(socket){
 });
 
 
-http.listen(3000,"192.168.1.102", function(){
+http.listen(3000,function(){
   console.log('listening on *:3000');
   console.log(connections);
 });
